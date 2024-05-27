@@ -11,32 +11,46 @@ $password = $_POST['password'];
 $confirmPassword = $_POST['confirmPassword'];
 
 $logFile = 'registration.log';
-$logData = "";
 
-if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    $response = ['success' => false, 'message' => 'Неверный адрес электронной почты!'];
+$log = function($message) use ($logFile, $email){
+    $sender = !empty($email) ? " || $email" : "";
+    $logData = date('Y-m-d H:i:s') . "$sender || $message\n";
+    file_put_contents($logFile, $logData, FILE_APPEND);
+    return;
+};
+
+$answer = function(bool $success, string $message){
+    $response = ['success' => $success, 'message' => $message];
     echo json_encode($response);
     exit;
+};
+
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    $log("Попытка регистрации с некорректным адресом");
+    $answer(false, "Неверный адрес электронной почты!");
+}
+
+if(empty($firstName) || empty($lastName)){
+    $log("Попытка регистрации с пустыми полями");
+    $answer(false, "Необходимо заполнить все поля!");
+}
+
+if (strlen($password) < 8){
+    $log("Попытка регистрации с некорректным паролем");
+    $answer(false, "Длина пароля должна быть больше 8!");
 }
 
 if ($password !== $confirmPassword) {
-    $response = ['success' => false, 'message' => 'Пароли не совпадают!'];
-    echo json_encode($response);
-    exit;
+    $log("Попытка регистрации с неверным подтверждением пароля");
+    $answer(false, "Пароли не совпадают!");
 }
 
 foreach ($existingUsers as $user) {
     if ($user['email'] == $email) {
-        $logData = "Попытка регистрации с существующим адресом: $email\n";
-        file_put_contents($logFile, $logData, FILE_APPEND);
-
-        $response = ['success' => false, 'message' => 'Пользователь с такой почтой уже зарегистрирован!'];
-        echo json_encode($response);
-        exit;
+        $log("Попытка повторной регистрации по одной почте");
+        $answer(false, "Пользователь с такой почтой уже зарегистрирован!");
     }
 }
 
-$logData = "Пользователь успешно зарегистрирован: $email\n";
-file_put_contents($logFile, $logData, FILE_APPEND);
-$response = ['success' => true, 'message' => 'Вы успешно зарегистрированы!'];
-echo json_encode($response);
+$log("Пользователь успешно зарегистрирован");
+$answer(true, "Вы успешно зарегистрированы!");

@@ -23,6 +23,11 @@ $(document).ready(function() {
             return;
         }
 
+        if(password.lenght < 8){
+            $('#message').html('<div class="alert alert-danger">Длина пароля должна быть больше 8!</div>');
+            return;
+        }
+
         const formData = { firstName, lastName, email, password, confirmPassword };
 
         $.ajax({
